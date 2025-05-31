@@ -1,3 +1,16 @@
+/**
+ * Main Todo Application Component
+ * 
+ * This is the primary component of the Todo application that handles:
+ * - Todo item management (add, toggle, delete)
+ * - Filtering functionality
+ * - Local storage persistence
+ * - Client-side hydration
+ * 
+ * The component uses React hooks for state management and implements
+ * optimistic updates for better user experience.
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,6 +18,7 @@ import { Todo, TodoFilter } from './types/todo';
 import { TodoList } from './components/TodoList';
 import { v4 as uuidv4 } from 'uuid';
 
+// Interface for todos stored in localStorage to handle Date serialization
 interface SavedTodo {
   id: string;
   text: string;
@@ -13,12 +27,15 @@ interface SavedTodo {
 }
 
 export default function Home() {
+  // State for handling client-side hydration
   const [isClient, setIsClient] = useState(false);
+  
+  // Core application state
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState('');
   const [filter, setFilter] = useState<TodoFilter>('all');
 
-  // Set isClient to true on mount
+  // Handle client-side hydration to prevent hydration mismatch
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -29,6 +46,7 @@ export default function Home() {
     if (savedTodos) {
       try {
         const parsedTodos = JSON.parse(savedTodos);
+        // Convert stored date strings back to Date objects
         setTodos(parsedTodos.map((todo: SavedTodo) => ({
           ...todo,
           createdAt: new Date(todo.createdAt)
@@ -40,13 +58,20 @@ export default function Home() {
     }
   }, []);
 
-  // Save todos to localStorage whenever they change
+  // Persist todos to localStorage whenever they change
   useEffect(() => {
     if (isClient) {
       localStorage.setItem('todos', JSON.stringify(todos));
     }
   }, [todos, isClient]);
 
+  /**
+   * Adds a new todo to the list
+   * - Prevents empty todos
+   * - Trims whitespace
+   * - Adds new todo at the beginning of the list
+   * - Generates unique ID using UUID
+   */
   const addTodo = (e: React.FormEvent) => {
     e.preventDefault();
     if (newTodo.trim()) {
@@ -63,6 +88,10 @@ export default function Home() {
     }
   };
 
+  /**
+   * Toggles the completed status of a todo
+   * Implements optimistic updates for better UX
+   */
   const toggleTodo = (id: string) => {
     setTodos(
       todos.map((todo) =>
@@ -71,6 +100,10 @@ export default function Home() {
     );
   };
 
+  /**
+   * Removes a todo from the list
+   * Implements optimistic updates for better UX
+   */
   const deleteTodo = (id: string) => {
     setTodos(todos.filter((todo) => todo.id !== id));
   };
@@ -82,6 +115,7 @@ export default function Home() {
           Cursor Todo App
         </h1>
 
+        {/* Todo Input Form */}
         <form onSubmit={addTodo} className="mb-8">
           <div className="flex gap-3">
             <input
@@ -100,6 +134,7 @@ export default function Home() {
           </div>
         </form>
 
+        {/* Filter Buttons */}
         <div className="flex justify-center gap-4 mb-8">
           {(['all', 'active', 'completed'] as const).map((filterOption) => (
             <button
@@ -116,6 +151,7 @@ export default function Home() {
           ))}
         </div>
 
+        {/* Todo List Component */}
         <TodoList
           todos={todos}
           filter={filter}
